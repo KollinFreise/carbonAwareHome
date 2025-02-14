@@ -1,0 +1,10 @@
+{
+  "domain": "carbon_aware",
+  "name": "Carbon Aware",
+  "version": "1.0.0",
+  "documentation": "https://github.com/example/carbon-aware",
+  "requirements": [],
+  "dependencies": [],
+  "codeowners": ["@deinusername"],
+  "iot_class": "cloud_polling"
+}
