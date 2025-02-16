@@ -1,0 +1,7 @@
+{
+  "name": "Carbon Aware Home",
+  "domain": "carbonAwareHome",
+  "country": "DE",
+  "homeassistant": "2023.1.0",
+  "render_readme": true
+}
