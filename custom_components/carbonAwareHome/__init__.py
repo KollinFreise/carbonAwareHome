@@ -2,7 +2,6 @@ import logging
 import aiohttp
 import urllib.parse
 import async_timeout
-import asyncio  # Import für TimeoutError
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import discovery
 from .const import DOMAIN, CONF_API_KEY, CONF_LOCATION
@@ -23,7 +22,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
         CONF_LOCATION: location,
     }
 
-    async def handle_get_co2_intensity_forecast(call: ServiceCall):
+    async def handle_get_co2_forecast(call: ServiceCall):
         """Handle the service call to get CO2 forecast."""
         try:
             data_start_at = call.data["dataStartAt"]
@@ -53,10 +52,9 @@ async def async_setup(hass: HomeAssistant, config: dict):
                                 best_time = best_point["timestamp"]
                                 best_value = best_point["value"]
 
-                                # Sensorstatus setzen
-                                hass.states.async_set("sensor.current_co2_intensity", best_time, {
-                                    "friendly_name": "Current CO2 Intensity",
-                                    "forecasted_co2_intensity": best_value,
+                                # Setze den Zustand eines Sensors
+                                hass.states.async_set("sensor.co2_forecast", best_time, {
+                                    "optimal_co2": best_value,
                                     "window_size": window_size,
                                     "start": data_start_at,
                                     "end": data_end_at,
@@ -67,12 +65,11 @@ async def async_setup(hass: HomeAssistant, config: dict):
                         else:
                             _LOGGER.error("Error fetching forecast: %s - %s", response.status, await response.text())
             except asyncio.TimeoutError:
-                _LOGGER.error("Timeout fetching CO2 intensity forecast")
+                _LOGGER.error("Timeout fetching CO2 forecast")
 
-    # Dienst registrieren
-    hass.services.async_register(DOMAIN, "get_co2_intensity_forecast", handle_get_co2_intensity_forecast)
+    hass.services.async_register(DOMAIN, "get_co2_forecast", handle_get_co2_forecast)
 
-    # Sensorplattform entdecken
+    # Discovery of the sensor platform
     hass.async_create_task(
         discovery.async_load_platform(hass, "sensor", DOMAIN, {}, config)
     )

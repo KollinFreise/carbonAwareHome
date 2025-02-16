@@ -5,6 +5,6 @@
   "documentation": "https://github.com/example/carbon-aware",
   "requirements": [],
   "dependencies": [],
-  "codeowners": ["@kollinfreise"],
+  "codeowners": ["@deinusername"],
   "iot_class": "cloud_polling"
 }
