@@ -63,3 +63,7 @@ class CO2CurrentSensor(Entity):
     @property
     def extra_state_attributes(self):
         return {"last_update": self._timestamp}
+
+    @property
+    def icon(self):
+        return "mdi:molecule-co2"

@@ -27,7 +27,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
         try:
             data_start_at = call.data["dataStartAt"]
             data_end_at = call.data["dataEndAt"]
-            window_size = call.data["windowSize"]
+            window_size = call.data["expectedRuntime"]
         except KeyError as e:
             _LOGGER.error("Missing required parameter: %s", e)
             return
@@ -52,22 +52,44 @@ async def async_setup(hass: HomeAssistant, config: dict):
                                 best_time = best_point["timestamp"]
                                 best_value = best_point["value"]
 
-                                # Setze den Zustand eines Sensors
-                                hass.states.async_set("sensor.co2_forecast", best_time, {
+                                # Set Sensor with valit data
+                                hass.states.async_set("sensor.co2_intensity_forecast", best_time, {
                                     "optimal_co2": best_value,
-                                    "window_size": window_size,
+                                    "expectedRuntime": window_size,
                                     "start": data_start_at,
                                     "end": data_end_at,
                                     "location": location
                                 })
                             else:
+                                hass.states.async_set("sensor.co2_intensity_forecast", "No Data", {
+                                    "optimal_co2": "NA",
+                                    "expectedRuntime": window_size,
+                                    "start": data_start_at,
+                                    "end": data_end_at,
+                                    "location": location
+                                })
                                 _LOGGER.warning("No forecast data available")
                         else:
-                            _LOGGER.error("Error fetching forecast: %s - %s", response.status, await response.text())
+                            hass.states.async_set("sensor.co2_intensity_forecast", "Error", {
+                                "optimal_co2": "NA",
+                                "expectedRuntime": window_size,
+                                "start": data_start_at,
+                                "end": data_end_at,
+                                "location": location
+                            })
+                            _LOGGER.error("Error fetching forecast: %s - %s", response, await response.text())
+
             except asyncio.TimeoutError:
+                hass.states.async_set("sensor.co2_intensity_forecast", "Timeout", {
+                    "optimal_co2": "NA",
+                    "expectedRuntime": window_size,
+                    "start": data_start_at,
+                    "end": data_end_at,
+                    "location": location
+                })
                 _LOGGER.error("Timeout fetching CO2 forecast")
 
-    hass.services.async_register(DOMAIN, "get_co2_forecast", handle_get_co2_forecast)
+    hass.services.async_register(DOMAIN, "get_co2_intensity_forecast", handle_get_co2_forecast)
 
     # Discovery of the sensor platform
     hass.async_create_task(
