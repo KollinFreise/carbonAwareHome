@@ -24,17 +24,17 @@ This integration helps shift energy-intensive tasks to times when the carbon int
 
 **Text Presentation of Sensor Data:**
 
- ![forecast.jpg](assets/forecast.jpg "Title")
+![forecast.jpg](assets/forecast.jpg "Title")
 
 **Graph Presentation of Sensor Data:**
 
- ![currentCo2.jpg](assets/currentCo2.jpg "Current CO2")
+![currentCo2.jpg](assets/currentCo2.jpg "Current CO2")
 
 **Using Actions in Automation:**
 
- ![automation.jpg](assets/automation.jpg)
+![automation.jpg](assets/automation.jpg)
 
-## Installation
+## HASC Installation (1st option)
 
 1. **Generate an API Key**
 
@@ -45,16 +45,100 @@ This integration helps shift energy-intensive tasks to times when the carbon int
    Register with the Carbon Aware Computing API. An API key will be sent to your email address. The address is only used to inform you about incompatible changes to this service.
 2. **Install Integration**
 
-   HASC: Go to HASC -->
+   HASC: Go to HASC --> three point menu (...) --> Custom Repostitorys --> Add thes git repo
 
-   ![image.png](assets/addIntegration)
-4. **Add Credentials to `config.yaml`**
+   ![img.png](assets/img.png)
 
-   ```yaml
-   carbon_aware_home:
-     api_key: "yourAPIKey"
-     location: de
-   ```
+## Manual Installation (2nd option)
+
+Copy all file from the [folder](https://github.com/KollinFreise/carbonAwareHome/tree/main/custom_components/carbonAwareHome) `custom_components/carbon_aware_home/carbonAwareHome` to `/custom_components/carbon_aware_home` in Home Assistant manually.
+
+## Configuration
+
+After installation you have to config your API Key.
+
+**Add Credentials to `configuration.yaml`**
+
+```yaml
+carbon_aware_home:
+  api_key: "yourAPIKey"
+  location: de
+```
+
+<details>
+  <summary>Location could be one of these values:</summary>
+
+* de
+* fr
+* at
+* ch
+* be
+* fi
+* nl
+* uk
+* london
+* southwales
+* germanywestcentral
+* switzerlandnorth
+* francecentral
+* uksouth
+* ukwest
+* eu-central-1
+* eu-central-2
+* eu-west-3
+* europe-west3
+* europe-west6
+* europe-west9
+* az
+* ba
+* by
+* cy
+* cz
+* dk
+* ee
+* es
+* ge
+* gr
+* hr
+* hu
+* ie
+* lt
+* lu
+* lv
+* md
+* me
+* mk
+* mt
+* nie
+* no
+* pl
+* pt
+* ro
+* rs
+* ru
+* se
+* sl
+* sk
+* tr
+* ua
+* xk
+* northscotland
+* southscotland
+* northwestengland
+* northeastengland
+* yorkshire
+* northwales
+* westmidlands
+* eastmidlands
+* eastengland
+* southwestengland
+* southengland
+* southeastengland
+* england
+* scotland
+* wales
+
+</details>
 
 ## Use Current CO2 Sensor Data
 
