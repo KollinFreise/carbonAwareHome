@@ -163,6 +163,71 @@ The result will be stored in `sensor.co2_intensity_forecast`.
 
 Possible values are "Error", "Timeout", "No Data", or a valid time.
 
+## Use CO2 Forecasted delay service
+
+You can use the `delay_execution_by_co2_forecast` function to find the best execution time and let an automation wait until this time to start an automation. 
+Try it out using Developer Tools:
+
+```yaml
+action: carbon_aware_home.delay_execution_by_co2_forecast
+data:
+  dataStartAt: "{{ start_of_time_window }}"
+  dataEndAt: "{{ end_of_time_window }}"
+  expectedRuntime: "{{ runTime }}"
+```
+or use it in Automations.
+<details>
+   <summary>Automation description</summary>
+   This automation, named "green_washer," is designed to optimize the operation of a device by minimizing carbon emissions during its runtime. When the device's switch is activated, the automation calculates an optimal time window between 8 AM and 9 PM for the device to operate. It assesses the current time and adjusts the start time accordingly, ensuring that if the current time is outside this window, the operation is postponed to the next suitable time. The automation also considers the current carbon intensity by accessing a sensor and delays the device's operation to a period within the specified window when carbon emissions are forecasted to be lower. Once the optimal time is determined, the device is turned on, and a notification is sent to a mobile app to inform the user that the device has started. This approach ensures that the device runs efficiently while reducing its environmental impact.
+</details>
+
+```yaml
+alias: green_washer
+description: ""
+triggers:
+  - type: turned_on
+    device_id: xxxxx
+    entity_id: xxxxx
+    domain: switch
+    trigger: device
+conditions: []
+actions:
+  - variables:
+      earlyest_time: 8
+      latest_time: 21
+      start_of_time_window: >-
+        {% set current_time = now().utcnow() + timedelta(minutes=1) %}  {% if
+        current_time.hour >= latest_time %}
+          {{ (current_time + timedelta(days=1)).replace(hour=earlyest_time, minute=0, second=0, microsecond=0) }}
+        {% elif current_time.hour < earlyest_time %}
+          {{ current_time.replace(hour=earlyest_time, minute=21, second=0, microsecond=0)}}
+        {% else %}
+          {{ current_time }}
+        {% endif %}
+      end_of_time_window: >-
+        {% set start_time = start_of_time_window | as_datetime %}  {{
+        start_time.replace(hour=21, minute=00, second=0, microsecond=0) }}
+      runTime: 60
+  - action: carbon_aware_home.delay_execution_by_co2_forecast
+    data:
+      dataStartAt: "{{ start_of_time_window }}"
+      dataEndAt: "{{ end_of_time_window }}"
+      expectedRuntime: "{{ runTime }}"
+  - type: turn_on
+    device_id: xxxxx
+    entity_id: xxxxx
+    domain: switch
+  - data:
+      message: started!
+    action: notify.mobile_app_pixel
+mode: restart
+```yaml
+
+
+The result will be stored in `sensor.co2_intensity_forecast`.
+
+Possible values are "Error", "Timeout", "No Data", or a valid time.
+
 ## Data Source
 
 This integration uses an API provided by [Carbon Aware Computing](https://www.carbon-aware-computing.com/).
