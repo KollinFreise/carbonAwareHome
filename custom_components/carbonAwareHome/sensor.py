@@ -33,10 +33,10 @@ class CO2CurrentSensor(Entity):
         async with aiohttp.ClientSession() as session:
             try:
                 async with async_timeout.timeout(10):
-                    _LOGGER.info("Timeout gesetzt")
+                    _LOGGER.info("Timeout set")
 
                     async with session.get(url, headers=headers) as response:
-                        _LOGGER.info("Start fetch new stat data: %s", response)
+                        _LOGGER.info("Start fetching new stat data: %s", response)
 
                         if response.status == 200:
                             data = await response.json()
@@ -46,7 +46,7 @@ class CO2CurrentSensor(Entity):
                         else:
                             _LOGGER.error("Error fetching current CO2 data: %s - %s", response.status, await response.text())
             except asyncio.TimeoutError:
-                _LOGGER.error("Timeout fetching current CO2 data")
+                _LOGGER.error("Timeout while fetching current CO2 data")
 
     @property
     def name(self):
