@@ -1,0 +1,128 @@
+delay_execution_by_co2_forecast_raw:
+  name: Delay execution (RAW)
+  description: Plan a run at lowest CO₂ time in window.
+  fields:
+    dataStartAt:
+      name: Window start
+      description: Start of window (ISO 8601 with timezone)
+      required: true
+      selector:
+        datetime:
+    dataEndAt:
+      name: Window end
+      description: End of window (ISO 8601 with timezone)
+      required: true
+      selector:
+        datetime:
+    expectedRuntime:
+      name: Expected runtime (minutes)
+      description: Runtime length in minutes
+      required: true
+      default: 60
+      selector:
+        number:
+          min: 1
+          max: 1440
+          mode: box
+    allowedHours:
+      name: Allowed hours (local, e.g., 8-21)
+      description: Restrict starts to local hours range
+      required: false
+      selector:
+        text:
+    targetService:
+      name: Target service (optional)
+      required: false
+      selector:
+        text:
+    targetData:
+      name: Target data (optional JSON)
+      required: false
+      selector:
+        text:
+
+get_co2_intensity_forecast_raw:
+  name: Set forecast sensor (RAW)
+  description: Compute RAW best and update sensor.co2_intensity_forecast
+  fields:
+    dataStartAt:
+      name: Window start
+      required: true
+      selector:
+        datetime:
+    dataEndAt:
+      name: Window end
+      required: true
+      selector:
+        datetime:
+    expectedRuntime:
+      name: Runtime (min)
+      required: true
+      default: 60
+      selector:
+        number:
+          min: 1
+          max: 1440
+          mode: box
+    allowedHours:
+      name: Allowed hours (e.g., 8-21)
+      required: false
+      selector:
+        text:
+
+get_best_time_api:
+  name: Get best time (API)
+  description: Non-blocking responding service (returns data)
+  fields:
+    dataStartAt:
+      name: Window start
+      required: true
+      selector:
+        datetime:
+    dataEndAt:
+      name: Window end
+      required: true
+      selector:
+        datetime:
+    expectedRuntime:
+      name: Runtime (min)
+      required: true
+      default: 60
+      selector:
+        number:
+          min: 1
+          max: 1440
+          mode: box
+
+
+get_best_time_raw:
+  name: Get best time (RAW)
+  description: Non-blocking responding service. Calculates best start using Energy-Charts raw data.
+  fields:
+    dataStartAt:
+      name: Window start
+      description: ISO 8601 with timezone (e.g., 2025-10-17T08:00:00+02:00)
+      required: true
+      selector:
+        datetime:
+    dataEndAt:
+      name: Window end
+      description: ISO 8601 with timezone
+      required: true
+      selector:
+        datetime:
+    expectedRuntime:
+      name: Runtime (minutes)
+      required: true
+      default: 60
+      selector:
+        number:
+          min: 1
+          max: 1440
+          mode: box
+    allowedHours:
+      name: Allowed hours (local)
+      description: e.g., 8-21
+      required: false
+      selector:
+        text:
