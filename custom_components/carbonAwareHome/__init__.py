@@ -14,7 +14,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.dt import now as hass_now, as_local
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import DOMAIN, CONF_API_KEY, CONF_LOCATION
+from .const import DOMAIN, CONF_API_KEY, CONF_LOCATION, REFRESH_INTERVAL_MINUTES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,12 +70,24 @@ class BluehandsProvider:
 class FraunhoferEnergyChartsProvider:
     CO2EQ_URL = "https://api.energy-charts.info/co2eq"
 
-    def __init__(self, country: str):
+    def __init__(self, country: str, hass: Optional[HomeAssistant] = None):
         self.country = country
+        self.hass = hass
 
     async def fetch_co2eq_series(self, session) -> Optional[Dict[str, Any]]:
+        # Use cache if available and fresh
+        cache = None
+        cache_time = None
+        if self.hass:
+            cache_data = self.hass.data.get(DOMAIN, {}).get('energy_charts_cache', {})
+            cache = cache_data.get('data')
+            cache_time = cache_data.get('timestamp')
+        now = datetime.now(timezone.utc)
+        if cache and cache_time and (now - cache_time).total_seconds() < 3600:
+            return cache
+        # Fetch from API and update cache
         url = f"{self.CO2EQ_URL}?country={self.country}"
-        backoffs = [5, 10, 15]  # retry wait times in seconds
+        backoffs = [5, 10, 15]
         for attempt in range(len(backoffs) + 1):
             try:
                 async with async_timeout.timeout(30):
@@ -86,15 +98,19 @@ class FraunhoferEnergyChartsProvider:
                             if 400 <= resp.status < 500:
                                 return None
                         else:
-                            return await resp.json()
+                            data = await resp.json()
+                            if self.hass:
+                                self.hass.data.setdefault(DOMAIN, {})['energy_charts_cache'] = {
+                                    'data': data,
+                                    'timestamp': now
+                                }
+                            return data
             except asyncio.TimeoutError:
                 _LOGGER.warning("Timeout (try %d) calling Energy-Charts CO2eq API", attempt + 1)
             except Exception as e:
                 _LOGGER.exception("Error (try %d) calling Energy-Charts CO2eq API: %s", attempt + 1, e)
-
             if attempt < len(backoffs):
                 await asyncio.sleep(backoffs[attempt])
-
         return None
 
 # --------------------------
@@ -267,12 +283,21 @@ async def async_setup(hass: HomeAssistant, config: dict):
         CONF_API_KEY: api_key,
         CONF_LOCATION: location,
     }
+    # Use REFRESH_INTERVAL_MINUTES from const.py
+    async def refresh_energy_charts_cache(_now=None):
+        session = async_get_clientsession(hass)
+        provider = FraunhoferEnergyChartsProvider(country=location, hass=hass)
+        await provider.fetch_co2eq_series(session)
+        next_run = dt_util.utcnow() + timedelta(minutes=REFRESH_INTERVAL_MINUTES)
+        async_track_point_in_time(hass, refresh_energy_charts_cache, next_run)
 
-    session = async_get_clientsession(hass)
+    # Starte den ersten Refresh beim Setup
+    hass.async_create_task(refresh_energy_charts_cache())
 
     # --- Non-blocking Services with Response Data ---
 
     async def handle_get_best_time_raw(call: ServiceCall):
+        session = async_get_clientsession(hass)
         data_start_at = call.data.get("dataStartAt")
         data_end_at   = call.data.get("dataEndAt")
         runtime       = call.data.get("expectedRuntime", 60)
@@ -294,7 +319,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
         ws_utc = dt_util.as_utc(ws)
         we_utc = dt_util.as_utc(we)
 
-        provider = FraunhoferEnergyChartsProvider(country=location)
+        provider = FraunhoferEnergyChartsProvider(country=location, hass=hass)
         raw_json = await provider.fetch_co2eq_series(session)
         if raw_json is None:
             # Fallback: Bluehands API
@@ -339,6 +364,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
         }
 
     async def handle_get_best_time_api(call: ServiceCall):
+        session = async_get_clientsession(hass)
         data_start_at = call.data.get("dataStartAt")
         data_end_at   = call.data.get("dataEndAt")
         runtime       = call.data.get("expectedRuntime", 60)
@@ -375,6 +401,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
     # --- Sensor Update Services (set sensor.co2_intensity_forecast) ---
 
     async def handle_get_forecast_api(call: ServiceCall):
+        session = async_get_clientsession(hass)
         data_start_at = call.data.get("dataStartAt")
         data_end_at = call.data.get("dataEndAt")
         runtime = int(call.data.get("expectedRuntime", 60))
@@ -396,6 +423,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
         return best_time, best_value
 
     async def handle_get_forecast_raw(call: ServiceCall):
+        session = async_get_clientsession(hass)
         data_start_at = call.data.get("dataStartAt")
         data_end_at = call.data.get("dataEndAt")
         runtime = int(call.data.get("expectedRuntime", 60))
@@ -416,7 +444,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
         ws_utc = dt_util.as_utc(ws)
         we_utc = dt_util.as_utc(we)
 
-        provider = FraunhoferEnergyChartsProvider(country=location)
+        provider = FraunhoferEnergyChartsProvider(country=location, hass=hass)
         raw_json = await provider.fetch_co2eq_series(session)
         if raw_json is None:
             _LOGGER.warning("Raw data unavailable, falling back to Bluehands API")
