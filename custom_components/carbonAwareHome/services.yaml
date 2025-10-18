@@ -70,30 +70,6 @@ get_co2_intensity_forecast_raw:
       selector:
         text:
 
-get_best_time_api:
-  name: Get best time (API)
-  description: Non-blocking responding service (returns data)
-  fields:
-    dataStartAt:
-      name: Window start
-      required: true
-      selector:
-        datetime:
-    dataEndAt:
-      name: Window end
-      required: true
-      selector:
-        datetime:
-    expectedRuntime:
-      name: Runtime (min)
-      required: true
-      default: 60
-      selector:
-        number:
-          min: 1
-          max: 1440
-          mode: box
-
 
 get_best_time_raw:
   name: Get best time (RAW)

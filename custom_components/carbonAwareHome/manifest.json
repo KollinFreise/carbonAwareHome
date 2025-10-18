@@ -6,5 +6,6 @@
   "requirements": [],
   "dependencies": [],
   "codeowners": ["@KollinFreise"],
-  "iot_class": "cloud_polling"
+  "iot_class": "cloud_polling",
+  "platforms": ["sensor"]
 }
