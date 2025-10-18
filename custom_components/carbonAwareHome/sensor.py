@@ -58,7 +58,8 @@ class CO2CurrentSensor(Entity):
         # Set state and timestamp
         from datetime import datetime, timezone
 
-        self._state = float(value)
+        # Round value to 2 decimal places
+        self._state = round(float(value), 2)
         self._timestamp = datetime.fromtimestamp(ts_used, tz=timezone.utc).isoformat()
         self._source = source
         self._status = "OK"
@@ -111,17 +112,17 @@ class CO2CurrentSensor(Entity):
                 # Linear interpolation
                 f = (now_ts - t0) / (t1 - t0)
                 interpolated = v0 + (v1 - v0) * f
-                return interpolated, now_ts, "interpolated", i
+                return round(interpolated, 2), now_ts, "interpolated", i  # Wert runden
 
         # Fallback: wie bisher
         # Finde den Index des letzten Zeitpunkts <= now
         i = bisect_right(unix_seconds, now_ts) - 1
 
         def actual_at(idx: int) -> Optional[float]:
-            return float(co2_actual[idx]) if 0 <= idx < len(co2_actual) and co2_actual[idx] is not None else None
+            return round(float(co2_actual[idx]), 2) if 0 <= idx < len(co2_actual) and co2_actual[idx] is not None else None
 
         def forecast_at(idx: int) -> Optional[float]:
-            return float(co2_forecast[idx]) if 0 <= idx < len(co2_forecast) and co2_forecast[idx] is not None else None
+            return round(float(co2_forecast[idx]), 2) if 0 <= idx < len(co2_forecast) and co2_forecast[idx] is not None else None
 
         # 1) Suche rückwärts bis 'now' einen gültigen Actual-Wert
         if i >= 0:

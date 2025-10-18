@@ -44,6 +44,7 @@ class FraunhoferEnergyChartsProvider:
         backoffs = [5, 10, 15]
         for attempt in range(len(backoffs) + 1):
             try:
+                _LOGGER.info("Calling Energy-Charts CO2eq API: %s (try %d)", url, attempt + 1)
                 async with async_timeout.timeout(60):
                     async with session.get(url, headers={"accept": "application/json"}) as resp:
                         if resp.status != 200:
@@ -60,7 +61,9 @@ class FraunhoferEnergyChartsProvider:
                                 }
                             return data
             except asyncio.TimeoutError as te:
+                _LOGGER.error("Timeout (try %d) calling Energy-Charts CO2eq API: %s - %s", attempt + 1, url, te)
             except Exception as e:
+                _LOGGER.exception("Error (try %d) calling Energy-Charts CO2eq API: %s - %s", attempt + 1, url, e)
             if attempt < len(backoffs):
                 await asyncio.sleep(backoffs[attempt])
         return None
@@ -164,6 +167,8 @@ GET_SCHEMA = vol.Schema({
 
 async def async_setup(hass: HomeAssistant, config: dict):
     """Set up the Carbon Aware component from configuration.yaml."""
+    _LOGGER.warning(">>> Carbon Aware Home: __init__ loaded")
+
     conf = config.get(DOMAIN)
     if conf is None:
         hass.async_create_task(
@@ -184,6 +189,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
         data = await provider.fetch_co2eq_series(session)
         _LOGGER.warning(">>> Cache refresh attempted")
         if data is not None:
+            _LOGGER.info("Energy-Charts cache refreshed with keys: %s", list(data.keys()))
             await hass.services.async_call(
                 "homeassistant", "update_entity",
                 {"entity_id": "sensor.current_co2_intensity"},
@@ -208,6 +214,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
     async_track_time_interval(hass, _update_sensor_every_minute, timedelta(minutes=1))
     _LOGGER.info("Per-minute sensor update scheduled")
 
+    # --- Service: get_best_time_raw (supports_response=True) ---
     async def handle_get_best_time_raw(call: ServiceCall):
         session = async_get_clientsession(hass)
         data_start_at = call.data.get("dataStartAt")
