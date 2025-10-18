@@ -22,6 +22,7 @@ class CO2CurrentSensor(Entity):
         self._source: Optional[str] = None  # 'actual' | 'forecast' | None
 
     async def async_update(self):
+        _LOGGER.info("async_update called for sensor.current_co2_intensity")
         """Fetch a robust current state from cache with sensible fallbacks."""
         cache = self.hass.data.get(DOMAIN, {}).get("energy_charts_cache", {})
         data = cache.get("data")
@@ -101,10 +102,21 @@ class CO2CurrentSensor(Entity):
         if n == 0:
             return None, None, None, None
 
+        # Interpolation: find i0, i1 so that unix_seconds[i0] <= now_ts < unix_seconds[i1]
+        for i in range(n - 1):
+            t0, t1 = unix_seconds[i], unix_seconds[i + 1]
+            v0 = co2_actual[i] if i < len(co2_actual) and co2_actual[i] is not None else co2_forecast[i] if i < len(co2_forecast) and co2_forecast[i] is not None else None
+            v1 = co2_actual[i + 1] if i + 1 < len(co2_actual) and co2_actual[i + 1] is not None else co2_forecast[i + 1] if i + 1 < len(co2_forecast) and co2_forecast[i + 1] is not None else None
+            if v0 is not None and v1 is not None and t0 <= now_ts < t1:
+                # Linear interpolation
+                f = (now_ts - t0) / (t1 - t0)
+                interpolated = v0 + (v1 - v0) * f
+                return interpolated, now_ts, "interpolated", i
+
+        # Fallback: wie bisher
         # Finde den Index des letzten Zeitpunkts <= now
         i = bisect_right(unix_seconds, now_ts) - 1
 
-        # Helper: sicheren Zugriff + None-check
         def actual_at(idx: int) -> Optional[float]:
             return float(co2_actual[idx]) if 0 <= idx < len(co2_actual) and co2_actual[idx] is not None else None
 
